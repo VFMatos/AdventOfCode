@@ -1,42 +1,6 @@
 ﻿// Get the current working directory
 using System.Text.RegularExpressions;
 
-string currentDirectory = Directory.GetCurrentDirectory();
-
-#region Part 1
-string relativePath_Part1 = "Resources/CalibrationDocument_Part1.txt";
-
-// Combine the current directory and relative path to get the full path
-string calibrationDocumentPart1 = Path.Combine(currentDirectory, relativePath_Part1);
-
-// Read all lines from the text document
-string[] linesPart1 = File.ReadAllLines(calibrationDocumentPart1);
-
-// Get calibration values for each line
-var calibrationValuesPart1 = linesPart1
-    .ToList()
-    .Select(x => new { FirstDigit = GetFirstDigit(x), LastDigit = GetLastDigit(x) })
-    .Select(y => int.Parse($"{y.FirstDigit}{y.LastDigit}"));
-
-// Calculate sum of all calibration values
-var resultPart1 = calibrationValuesPart1.Sum();
-
-Console.WriteLine($"Part 1 result: {resultPart1}");
-
-static char GetFirstDigit(string input)
-{
-    char firstDigit = input.FirstOrDefault(char.IsDigit);
-    return firstDigit;
-}
-
-static char GetLastDigit(string input)
-{
-    char lastDigit = input.LastOrDefault(char.IsDigit);
-    return lastDigit;
-}
-#endregion
-
-
 // Define a dictionary to map spelled-out digits to numeric values
 Dictionary<string, int> SpelledDigitToNumericMapping = new Dictionary<string, int>
 {
@@ -52,29 +16,37 @@ Dictionary<string, int> SpelledDigitToNumericMapping = new Dictionary<string, in
     { "nine",   9 },
 };
 
-string relativePath_Part2 = "Resources/CalibrationDocument_Part1.txt";
-
+string currentDirectory = Directory.GetCurrentDirectory();
+string relativePath = "Resources/CalibrationDocument.txt";
 // Combine the current directory and relative path to get the full path
-string calibrationDocumentPart2 = Path.Combine(currentDirectory, relativePath_Part2);
+string calibrationDocument = Path.Combine(currentDirectory, relativePath);
 
 // Read all lines from the text document
-string[] linesPart2 = File.ReadAllLines(calibrationDocumentPart2);
+string[] lines = File.ReadAllLines(calibrationDocument);
 
-// Get calibration values for each line
-var calibrationValuesPart2 = linesPart2
-    .ToList()
-    .Select(x => GetCalibrationValue(x));
-
-// Calculate sum of all calibration values
-var resultPart2 = calibrationValuesPart2.Sum();
-
-Console.WriteLine($"Part 2 result: {resultPart2}");
-
-int GetCalibrationValue(string input)
+var patterns = new List<string>()
 {
-    // Define a regular expression pattern to match spelled-out digits or numeric digits
-    string pattern = @"(?=(zero|one|two|three|four|five|six|seven|eight|nine|\d))";
+    @"(?=(\d))",
+    @"(?=(zero|one|two|three|four|five|six|seven|eight|nine|\d))"
+};
 
+int part = 1;
+foreach (var pattern in patterns)
+{
+    // Get calibration values for each line
+    var calibrationValues = lines
+        .ToList()
+        .Select(x => GetCalibrationValue(x, pattern));
+
+    // Calculate sum of all calibration values
+    var result = calibrationValues.Sum();
+
+    Console.WriteLine($"Part {part} result: {result}");
+    part++;
+}
+
+int GetCalibrationValue(string input, string pattern)
+{
     // Use Regex.Matches to find all matches in the input string
     MatchCollection matches = Regex.Matches(input, pattern, RegexOptions.IgnoreCase);
 
@@ -99,10 +71,9 @@ int GetMatchedValue(Match match)
     {
         return numericValue;
     }
-    else if(SpelledDigitToNumericMapping.TryGetValue(matchedValue, out int spelledDigitValue))
+    else if (SpelledDigitToNumericMapping.TryGetValue(matchedValue, out int spelledDigitValue))
     {
         return spelledDigitValue;
     }
     return 0;
 }
-
