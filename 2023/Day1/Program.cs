@@ -73,7 +73,7 @@ Console.WriteLine($"Part 2 result: {resultPart2}");
 int GetCalibrationValue(string input)
 {
     // Define a regular expression pattern to match spelled-out digits or numeric digits
-    string pattern = @"(?:zero|one|two|three|four|five|six|seven|eight|nine|\d)";
+    string pattern = @"(?=(zero|one|two|three|four|five|six|seven|eight|nine|\d))";
 
     // Use Regex.Matches to find all matches in the input string
     MatchCollection matches = Regex.Matches(input, pattern, RegexOptions.IgnoreCase);
@@ -93,7 +93,7 @@ int GetCalibrationValue(string input)
 
 int GetMatchedValue(Match match)
 {
-    string matchedValue = match.Value.ToLower();
+    string matchedValue = match.Groups[1].Value.ToLower();
 
     if (int.TryParse(matchedValue, out int numericValue))
     {
