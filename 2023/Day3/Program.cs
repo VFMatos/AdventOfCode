@@ -37,7 +37,7 @@ public class Program
                 foreach (Match number in currentLineInfo.Numbers)
                 {
                     var minIndex = number.Index - 1;
-                    var maxIndex = number.Index + number.Length + 1;
+                    var maxIndex = number.Index + number.Length;
 
                     var isPartNumber = HasAdjacentSymbols(currentLineInfo, minIndex, maxIndex)
                     || (currentNode.Previous != null && HasAdjacentSymbols(currentNode.Previous.Value, minIndex, maxIndex))
