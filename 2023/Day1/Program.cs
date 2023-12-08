@@ -1,5 +1,4 @@
-﻿// Get the current working directory
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 // Define a dictionary to map spelled-out digits to numeric values
 Dictionary<string, int> SpelledDigitToNumericMapping = new Dictionary<string, int>
@@ -16,6 +15,7 @@ Dictionary<string, int> SpelledDigitToNumericMapping = new Dictionary<string, in
     { "nine",   9 },
 };
 
+// Get the current working directory
 string currentDirectory = Directory.GetCurrentDirectory();
 string relativePath = "Resources/CalibrationDocument.txt";
 // Combine the current directory and relative path to get the full path
