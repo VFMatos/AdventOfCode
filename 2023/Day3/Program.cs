@@ -12,10 +12,10 @@ public class Program
         string currentDirectory = Directory.GetCurrentDirectory();
         string relativePath = "Resources/EngineInformation.txt";
         // Combine the current directory and relative path to get the full path
-        string gameData = Path.Combine(currentDirectory, relativePath);
+        string engineData = Path.Combine(currentDirectory, relativePath);
 
         // Read all lines from the text document
-        string[] lines = File.ReadAllLines(gameData);
+        string[] lines = File.ReadAllLines(engineData);
 
         var engineLineInfo = new LinkedList<EngineLineInformation>(
         lines.Select((x, i) => new EngineLineInformation(i + 1)
