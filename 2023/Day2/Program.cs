@@ -37,11 +37,14 @@
 
             // Check all conditions in a single query
             gameInfo.IsValid = ValidateQuantities(maxQuantityByColor, validQuantities);
+			
+			gameInfo.Power = maxQuantityByColor.Select(x => x.MaxQuantity).Aggregate((x, y) => x * y);
 
             gameInfos.Add(gameInfo);
         }
 
         Console.WriteLine($"Part 1 result: {gameInfos.Where(x => x.IsValid).Sum(x => x.Id)}");
+        Console.WriteLine($"Part 2 result: {gameInfos.Sum(x => x.Power)}");
     }
 
     static bool ValidateQuantities(List<ColorMaxQuantity> maxQuantityByColor, Dictionary<string, int> validQuantities)
@@ -58,6 +61,7 @@
 
         public int Id { get; set; }
         public bool IsValid { get; set; }
+		public int Power {get; set; }
     }
 
     public class ColorMaxQuantity
