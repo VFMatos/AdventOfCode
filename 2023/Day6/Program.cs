@@ -31,17 +31,25 @@ public class Program
             raceInfos.Add(raceInfo);
         }
 
+        var joinTimes = string.Join(string.Empty, times);
+        var joinDistances = string.Join(string.Empty, distances);
+
+        var newRace = new RaceInformation(raceInfos.Count() + 1, int.Parse(joinTimes), long.Parse(joinDistances));
+        newRace.CountWaysToWin = CalculateWaysToWin(newRace.RaceTime, newRace.RecordDistance);
+
+
         Console.WriteLine($"Part 1 result: {raceInfos.Select(x => x.CountWaysToWin).Aggregate((x, y) => x * y)}");
+        Console.WriteLine($"Part 2 result: {newRace.CountWaysToWin}");
     }
 
-    static int CalculateWaysToWin(int raceTime, int recordDistance)
+    static long CalculateWaysToWin(int raceTime, long recordDistance)
     {
-        return Enumerable.Range(0, raceTime + 1).Count(x => x * (raceTime - x) > recordDistance);
+        return Enumerable.Range(0, raceTime + 1).LongCount(x => (long)x * (long)(raceTime - x) > recordDistance);
     }
 
     public class RaceInformation
     {
-        public RaceInformation(int id, int raceTime, int recordDistance)
+        public RaceInformation(int id, int raceTime, long recordDistance)
         {
             Id = id;
             RaceTime = raceTime;
@@ -50,7 +58,7 @@ public class Program
 
         public int Id { get; set; }
         public int RaceTime { get; set; }
-        public int RecordDistance { get; set; }
-        public int CountWaysToWin { get; set; }
+        public long RecordDistance { get; set; }
+        public long CountWaysToWin { get; set; }
     }
 }
