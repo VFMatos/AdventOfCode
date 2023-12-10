@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 public class Program
 {
@@ -18,34 +14,43 @@ public class Program
         string[] lines = File.ReadAllLines(engineData);
 
         var engineLineInfo = new LinkedList<EngineLineInformation>(
-        lines.Select((x, i) => new EngineLineInformation(i + 1)
-        {
-            Numbers = Regex.Matches(x, @"\d+"),
-            Symbols = Regex.Matches(x, @"[^a-zA-Z0-9.]")
-        }));
+       lines.Select((x, i) => new EngineLineInformation(i + 1)
+       {
+           Numbers = Regex.Matches(x, @"\d+"),
+           Symbols = Regex.Matches(x, @"[^a-zA-Z0-9.]")
+       }));
 
         var currentNode = engineLineInfo.First;
 
         var partNumbers = new List<int>();
+        var gearRatios = new List<int>();
 
         while (currentNode != null)
         {
-            var currentLineInfo = currentNode.Value;
-
-            if (currentLineInfo.Numbers.Any())
+            if (currentNode.Value.Symbols.Any())
             {
-                foreach (Match number in currentLineInfo.Numbers)
+                foreach (Match symbol in currentNode.Value.Symbols)
                 {
-                    var minIndex = number.Index - 1;
-                    var maxIndex = number.Index + number.Length;
+                    var gearNumbers = new List<int>();
 
-                    var isPartNumber = HasAdjacentSymbols(currentLineInfo, minIndex, maxIndex)
-                    || (currentNode.Previous != null && HasAdjacentSymbols(currentNode.Previous.Value, minIndex, maxIndex))
-                    || (currentNode.Next != null && HasAdjacentSymbols(currentNode.Next.Value, minIndex, maxIndex));
+                    var currentPartNumbers = GetPartNumbersFromSymbol(currentNode.Value, symbol.Index);
+                    var previousPartNumbers = GetPartNumbersFromSymbol(currentNode.Previous?.Value, symbol.Index);
+                    var nextPartNumbers = GetPartNumbersFromSymbol(currentNode.Next?.Value, symbol.Index);
 
-                    if (isPartNumber)
+                    partNumbers.AddRange(currentPartNumbers);
+                    partNumbers.AddRange(previousPartNumbers);
+                    partNumbers.AddRange(nextPartNumbers);
+
+                    if (symbol.Value == "*")
                     {
-                        partNumbers.Add(int.Parse(number.Value));
+                        gearNumbers.AddRange(currentPartNumbers);
+                        gearNumbers.AddRange(previousPartNumbers);
+                        gearNumbers.AddRange(nextPartNumbers);
+
+                        if (gearNumbers.Count() == 2)
+                        {
+                            gearRatios.Add(gearNumbers.Aggregate((x, y) => x * y));
+                        }
                     }
                 }
             }
@@ -55,6 +60,7 @@ public class Program
         }
 
         Console.WriteLine($"Part 1 result: {partNumbers.Sum()}");
+        Console.WriteLine($"Part 2 result: {gearRatios.Sum()}");
     }
 
     static bool IsBetween(int index, int minIndex, int maxIndex)
@@ -67,6 +73,15 @@ public class Program
         return lineInfo.Symbols.Any(x => IsBetween(x.Index, minIndex, maxIndex));
     }
 
+    static List<int> GetPartNumbersFromSymbol(EngineLineInformation lineInfo, int symbolIndex)
+    {
+        return lineInfo != null ?
+            lineInfo.Numbers
+            .Where(x => IsBetween(symbolIndex, x.Index - 1, x.Index + x.Length))
+            .Select(x => int.Parse(x.Value))
+            .ToList()
+            : new List<int>();
+    }
 
     public class EngineLineInformation
     {
