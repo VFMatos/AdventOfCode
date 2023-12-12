@@ -11,75 +11,126 @@
         // Read all lines from the text document
         string[] lines = File.ReadAllLines(scratchCardData);
 
-        string customOrder = "AKQJT98765432";
+        string customOrder1 = "AKQJT98765432";
+        string customOrder2 = "AKQT98765432J";
 
-        var camelCardInfos = new List<CamelCardInformation>();
-
-        foreach (var line in lines)
+        for (int i = 1; i <= 2; i++)
         {
-            var lineInfo = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var camelCardInfo = new CamelCardInformation(lineInfo.First(), int.Parse(lineInfo.Last()));
-            camelCardInfo.Type = GetHandType(camelCardInfo.Hand);
+            var camelCardInfos = new List<CamelCardInformation>();
 
-            camelCardInfos.Add(camelCardInfo);
+            foreach (var line in lines)
+            {
+                var lineInfo = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var camelCardInfo = new CamelCardInformation(lineInfo.First(), int.Parse(lineInfo.Last()));
+                camelCardInfo.Type = GetHandType(camelCardInfo.Hand, i);
+
+                camelCardInfos.Add(camelCardInfo);
+            }
+
+            //var orderedCamelCards = camelCardInfos
+            //    .OrderBy(x => x.Type)
+            //    .ThenByDescending(x => x.Hand, new CustomOrderComparer(i == 1 ? customOrder1 : customOrder2))
+            //    .ToList();
+
+            var orderedCamelCards = camelCardInfos
+                .OrderBy(x => x.Type)
+                .ThenBy(x => x.Hand, new CustomOrderComparer2(i == 1 ? 11 : 1))
+                .ToList();
+
+            int rankCounter = 1;
+            orderedCamelCards.ForEach(hand =>
+            {
+                hand.Rank = rankCounter;
+                rankCounter++;
+            });
+
+            Console.WriteLine($"Part {i} result: {orderedCamelCards.Sum(x => x.GetWin())}");
         }
 
         /*
-		var orderedCamelCards = camelCardInfos
-            .OrderBy(x => x.Type)
-            .ThenByDescending(x => x.Hand, new CustomOrderComparer(customOrder))
-			.ToList();
-        */
-
-        var orderedCamelCards = camelCardInfos
-            .OrderBy(x => x.Type)
-            .ThenBy(x => x.Hand, new CustomOrderComparer2())
-            .ToList();
-
-        int rankCounter = 1;
-        orderedCamelCards.ForEach(hand =>
-        {
-            hand.Rank = rankCounter;
-            rankCounter++;
-        });
-
-        Console.WriteLine($"Part 1 result: {orderedCamelCards.Sum(x => x.GetWin())}");
-        //Console.WriteLine($"Part 2 result: {newRace.CountWaysToWin}");
-
-        foreach (var camelCardInfo in orderedCamelCards)
-        {
-            Console.WriteLine($"Hand: {camelCardInfo.Hand}" +
-                             $", Bid: {camelCardInfo.Bid}" +
-                             $", HandType: {camelCardInfo.Type}" +
-                             $", Rank: {camelCardInfo.Rank}");
-        }
+        foreach (var camelCardInfo in orderedCamelCards)
+        {
+            Console.WriteLine($"Hand: {camelCardInfo.Hand}" +
+                             $", Bid: {camelCardInfo.Bid}" +
+                             $", HandType: {camelCardInfo.Type}" +
+                             $", Rank: {camelCardInfo.Rank}");
+        }*/
     }
 
-    static HandType GetHandType(string hand)
+    static HandType GetHandType(string hand, int part)
     {
         var countChars = CountCharacters(hand);
         var numberOfDifferentChars = countChars.Count();
 
-        switch (numberOfDifferentChars)
+        if (countChars.ContainsKey('J') && part == 2)
         {
-            case 5:
-                return HandType.Highcard;
-            case 4:
-                return HandType.OnePair;
-            case 3:
-                if (countChars.Any(x => x.Value == 3))
-                {
-                    return HandType.ThreeOfAkind;
-                }
-                return HandType.TwoPair;
-            case 2:
-                if (countChars.Any(x => x.Value == 4))
-                {
+            switch (countChars['J'])
+            {
+                case 5:
+                    return HandType.FiveOfAKind;
+                case 4:
+                    return HandType.FiveOfAKind;
+                case 3:
+                    if (numberOfDifferentChars == 2)
+                    {
+                        return HandType.FiveOfAKind;
+                    }
                     return HandType.FourOfAKind;
-                }
-                return HandType.FullHouse;
-            case 1:
-                return HandType.FiveOfAKind;
+
+                case 2:
+                    if (numberOfDifferentChars == 2)
+                    {
+                        return HandType.FiveOfAKind;
+                    }
+                    else if (numberOfDifferentChars == 3)
+                    {
+                        return HandType.FourOfAKind;
+                    }
+                    return HandType.ThreeOfAkind;
+
+                case 1:
+                    if (numberOfDifferentChars == 2)
+                    {
+                        return HandType.FiveOfAKind;
+                    }
+                    else if (numberOfDifferentChars == 3)
+                    {
+                        if (countChars.Any(x => x.Value == 3))
+                        {
+                            return HandType.FourOfAKind;
+                        }
+                        return HandType.FullHouse;
+                    }
+                    else if (numberOfDifferentChars == 4)
+                    {
+                        return HandType.ThreeOfAkind;
+                    }
+                    return HandType.OnePair;
+            }
+        }
+        else
+        {
+            switch (numberOfDifferentChars)
+            {
+                case 5:
+                    return HandType.Highcard;
+                case 4:
+                    return HandType.OnePair;
+                case 3:
+                    if (countChars.Any(x => x.Value == 3))
+                    {
+                        return HandType.ThreeOfAkind;
+                    }
+                    return HandType.TwoPair;
+                case 2:
+                    if (countChars.Any(x => x.Value == 4))
+                    {
+                        return HandType.FourOfAKind;
+                    }
+                    return HandType.FullHouse;
+                case 1:
+                    return HandType.FiveOfAKind;
+            }
         }
 
         return HandType.FullHouse;
@@ -88,8 +139,8 @@
     static Dictionary<char, int> CountCharacters(string input)
     {
         var charCount = input
-           .GroupBy(c => c)
-           .ToDictionary(g => g.Key, g => g.Count());
+         .GroupBy(c => c)
+         .ToDictionary(g => g.Key, g => g.Count());
 
         return charCount;
     }
@@ -153,24 +204,24 @@
     {
         private readonly Dictionary<char, int> charValues;
 
-        public CustomOrderComparer2()
+        public CustomOrderComparer2(int jValue)
         {
-            // Initialize character values
-            charValues = new Dictionary<char, int>
+            // Initialize character values
+            charValues = new Dictionary<char, int>
             {
-              {'2', 2},
-              {'3', 3},
-              {'4', 4},
-              {'5', 5},
-              {'6', 6},
-              {'7', 7},
-              {'8', 8},
-              {'9', 9},
-              {'T', 10},
-              {'J', 11},
-              {'Q', 12},
-              {'K', 13},
-              {'A', 14}
+                {'2', 2},
+                {'3', 3},
+                {'4', 4},
+                {'5', 5},
+                {'6', 6},
+                {'7', 7},
+                {'8', 8},
+                {'9', 9},
+                {'T', 10},
+                {'J', jValue},
+                {'Q', 12},
+                {'K', 13},
+                {'A', 14}
             };
         }
 
