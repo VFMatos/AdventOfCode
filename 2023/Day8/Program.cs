@@ -21,42 +21,83 @@ public class Program
 
         foreach (var line in lines.Skip(2))
         {
-            var matches = Regex.Matches(line, @"\b[A-Z]+\b", options);
+            var matches = Regex.Matches(line, @"\b[a-zA-Z0-9]+\b", options);
 
             var mapInfo = new MapInformation(matches[0].Value, matches[1].Value, matches[2].Value);
 
             mapInfos.Add(mapInfo);
         }
 
-        var currentPosition = mapInfos.Where(x => x.Position == "AAA").First();
-        var destination = mapInfos.Where(x => x.Position == "ZZZ").First().Position;
+        var node = mapInfos.Where(x => x.Position == "AAA").First();
+        long countToDestination = CountToDestination(node, mapInfos, instructions, x => x.Position != "ZZZ");
 
-        int i = 0;
-        int rounds = 0;
+        Console.WriteLine($"Part 1 result: {countToDestination}");
 
-        while (currentPosition.Position != destination)
+        var nodes = mapInfos.Where(x => x.Position.EndsWith("A"));
+        var countsToZ = new List<long>();
+
+        Parallel.ForEach(nodes, node =>
         {
-            if (instructions[i] == 'L')
-            {
-                currentPosition = mapInfos.Where(x => x.Position == currentPosition.Left).First();
-            }
-            else
-            {
-                currentPosition = mapInfos.Where(x => x.Position == currentPosition.Right).First();
-            }
+            var count = CountToDestination(node, mapInfos, instructions, x => !x.Position.EndsWith("Z"));
 
-            if (i < instructions.Length - 1)
+            countsToZ.Add(count);
+        });
+
+        var leastCommonMultiple = CalculateLCM(countsToZ);
+
+        Console.WriteLine($"Part 2 result: {leastCommonMultiple}");
+    }
+
+    static long CountToDestination(MapInformation startNode, List<MapInformation> mapInfos, char[] instructions, Func<MapInformation, bool> condition)
+    {
+        long count = 0;
+
+        while (condition(startNode))
+        {
+            foreach (var inst in instructions)
             {
-                i++;
-            }
-            else
-            {
-                i = 0;
-                rounds++;
+                if (inst == 'L')
+                {
+                    startNode = mapInfos.FirstOrDefault(y => y.Position == startNode.Left);
+                }
+                else
+                {
+                    startNode = mapInfos.FirstOrDefault(y => y.Position == startNode.Right);
+                }
+                count++;
             }
         }
 
-        Console.WriteLine($"Part 1 result: {rounds * instructions.Length + i}");
+        return count;
+    }
+
+    static long CalculateLCM(List<long> numbers)
+    {
+        long lcm = 1;
+
+        foreach (long number in numbers)
+        {
+            lcm = CalculateLCM(lcm, number);
+        }
+
+        return lcm;
+    }
+
+    static long CalculateLCM(long a, long b)
+    {
+        return Math.Abs(a * b) / CalculateGCD(a, b);
+    }
+
+    static long CalculateGCD(long a, long b)
+    {
+        while (b != 0)
+        {
+            long temp = b;
+            b = a % b;
+            a = temp;
+        }
+
+        return Math.Abs(a);
     }
 
     public class MapInformation
