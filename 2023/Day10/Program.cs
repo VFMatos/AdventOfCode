@@ -11,9 +11,7 @@
         // Read all lines from the text document
         string[] lines = File.ReadAllLines(pipeMazeData);
 
-        var nodes = new LinkedList<PipeMazeInformation>(lines
-            .Select((line, index) => new PipeMazeInformation(index, line))
-        );
+        var nodes = new LinkedList<PipeMazeInformation>(lines.Select((line, index) => new PipeMazeInformation(index, line)));
 
         var currentNode = nodes.First;
         while (currentNode != null && !currentNode.Value.LineInfo.Contains('S'))
@@ -23,28 +21,35 @@
 
         var currentIndex = currentNode.Value.LineInfo.IndexOf('S');
         currentNode.Value.LoopIndexes.Add(currentIndex);
-        Direction fromDirection = Direction.None;
+        var fromDirection = Direction.None;
+        var firstToDirection = Direction.None;
+
+        var vertices = new List<Point>();
 
         // First step
         if (currentIndex + 1 < currentNode.Value.LineInfo.Length && (new char[] { '-', 'J', '7' }).Contains(currentNode.Value.LineInfo[currentIndex + 1]))
         {
             currentIndex++;
             fromDirection = Direction.Left;
+            firstToDirection = Direction.Right;
         }
         else if (currentIndex - 1 >= 0 && (new char[] { '-', 'L', 'F' }).Contains(currentNode.Value.LineInfo[currentIndex - 1]))
         {
             currentIndex--;
             fromDirection = Direction.Right;
+            firstToDirection = Direction.Left;
         }
         else if (currentNode.Next != null && (new char[] { '|', 'L', 'J' }).Contains(currentNode.Next.Value.LineInfo[currentIndex]))
         {
             currentNode = currentNode.Next;
             fromDirection = Direction.Up;
+            firstToDirection = Direction.Down;
         }
         else if (currentNode.Previous != null && (new char[] { '|', '7', 'F' }).Contains(currentNode.Previous.Value.LineInfo[currentIndex]))
         {
             currentNode = currentNode.Previous;
             fromDirection = Direction.Down;
+            firstToDirection = Direction.Up;
         }
 
         while (currentNode != null
@@ -55,6 +60,11 @@
             currentNode.Value.LoopIndexes.Add(currentIndex);
 
             fromCharacterTo.TryGetValue((fromDirection, currentNode.Value.LineInfo[currentIndex]), out Direction toDirection);
+
+            if (IsVertice(fromDirection, toDirection))
+            {
+                vertices.Add(new Point(currentNode.Value.LineNumber, currentIndex));
+            }
 
             switch (toDirection)
             {
@@ -77,7 +87,46 @@
             }
         }
 
-        Console.WriteLine($"Part 1 result: {(int)(nodes.Sum(x => x.LoopIndexes.Count()) / 2)}");
+        var loopSteps = (int)(nodes.Sum(x => x.LoopIndexes.Count()) / 2);
+
+        Console.WriteLine($"Part 1 result: {loopSteps}");
+
+        // Add S if is vertice
+        if (IsVertice(fromDirection, firstToDirection))
+        {
+            vertices.Add(new Point(currentNode.Value.LineNumber, currentIndex));
+        }
+
+        var area = CalculatePolygonArea(vertices);
+
+        // Use Pick's theorem to calculate interior points
+        var interiorTiles = area + 1 - loopSteps;
+
+        Console.WriteLine($"Part 2 result: {interiorTiles}");
+    }
+
+    public static bool IsVertice(Direction fromDirection, Direction toDirection)
+    {
+        return ((fromDirection == Direction.Up || fromDirection == Direction.Down) && (toDirection == Direction.Left || toDirection == Direction.Right))
+          ||
+          ((fromDirection == Direction.Left || fromDirection == Direction.Right) && (toDirection == Direction.Up || toDirection == Direction.Down))
+        ;
+    }
+
+    // Use Shoelace formula to calculate area
+    public static double CalculatePolygonArea(List<Point> polygon)
+    {
+        int n = polygon.Count;
+        double area = 0;
+
+        for (int i = 0; i < n; i++)
+        {
+            int j = (i + 1) % n;
+            area += (polygon[i].X * polygon[j].Y) - (polygon[j].X * polygon[i].Y);
+        }
+
+        area = Math.Abs(area) / 2.0;
+        return area;
     }
 
     public static Dictionary<(Direction Origin, char character), Direction> fromCharacterTo =
@@ -109,7 +158,18 @@
         public string LineInfo { get; set; }
 
         public List<int> LoopIndexes { get; set; } = new List<int>();
-        public int CountInnerTiles { get; set; }
+    }
+
+    public class Point
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+
+        public Point(double x, double y)
+        {
+            X = x;
+            Y = y;
+        }
     }
 
     public enum Direction
