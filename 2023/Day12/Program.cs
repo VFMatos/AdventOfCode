@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 public class Program
 {
-    public static Dictionary<(string, ImmutableList<int>), long> cache = new Dictionary<(string, ImmutableList<int>), long>();
+    public static Dictionary<string, long> cache = new Dictionary<string, long>();
 
     public static void Main()
     {
@@ -17,23 +17,30 @@ public class Program
         // Read all lines from the text document
         string[] lines = File.ReadAllLines(data);
 
-        long total = 0;
+        var unfold = new List<int>() { 1, 5 };
 
-        foreach (var line in lines)
+        for (int i = 0; i < unfold.Count; i++)
         {
-            var split = line.Split(" ", StringSplitOptions.RemoveEmptyEntries).ToList();
+            long total = 0;
 
-            var symbols = split.First();
-            var numbers = split.Last()
-                            .Split(",", StringSplitOptions.RemoveEmptyEntries)
-                            .Select(int.Parse).ToImmutableList();
+            foreach (var line in lines)
+            {
+                var split = line.Split(" ", StringSplitOptions.RemoveEmptyEntries).ToList();
 
-            var springInfo = new SpringInformation(symbols, numbers);
+                var symbols = string.Join("?", Enumerable.Repeat(split.First(), unfold[i]));
+                var numbers = Enumerable.Repeat(
+                    split.Last()
+                        .Split(",", StringSplitOptions.RemoveEmptyEntries)
+                        .Select(int.Parse), unfold[i])
+                    .SelectMany(x => x).ToImmutableList();
 
-            total += Count(springInfo.Symbols, springInfo.Numbers);
+                var springInfo = new SpringInformation(symbols, numbers);
+
+                total += Count(springInfo.Symbols, springInfo.Numbers);
+            }
+
+            Console.WriteLine($"Part {i + 1} result: {total}");
         }
-
-        Console.WriteLine($"Part 1 result: {total}");
     }
 
     public static long Count(string symbols, ImmutableList<int> numbers)
@@ -46,7 +53,7 @@ public class Program
         if (numbers.IsEmpty)
             return symbols.Contains("#") ? 0 : 1;
 
-        var key = (symbols, numbers);
+        var key = $"{symbols},{String.Join(",", numbers)}";
 
         if (cache.ContainsKey(key))
             return cache[key];
@@ -56,7 +63,7 @@ public class Program
         // If the first character is '?' or '.' we assume it is '.' and skip it
         if ((".?").Contains(symbols[0]))
         {
-            result += Count(symbols.Substring(1), numbers);
+            result += Count(symbols[1..], numbers);
         }
 
         // If the first character is '?' or '#' we assume it is '#'
@@ -72,9 +79,9 @@ public class Program
             && (numbers[0] == symbols.Length || symbols[numbers[0]] != '#'))
             {
                 if (numbers[0] == symbols.Length)
-                    result += Count(symbols.Substring(numbers[0]), numbers.Skip(1).ToImmutableList());
+                    result += Count(symbols[numbers[0]..], numbers.Skip(1).ToImmutableList());
                 else
-                    result += Count(symbols.Substring(numbers[0] + 1), numbers.Skip(1).ToImmutableList());
+                    result += Count(symbols[(numbers[0] + 1)..], numbers.Skip(1).ToImmutableList());
             }
         }
 
