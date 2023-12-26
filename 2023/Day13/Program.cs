@@ -13,29 +13,33 @@
         string input = File.ReadAllText(data);
 
         var patterns = input.Split("\r\n\r\n");
-        var total = 0;
 
-        object lockObject = new object();
-
-        Parallel.ForEach(patterns, pattern =>
+        for (int i = 0; i <= 1; i++)
         {
-            int rowsAbove = 0;
+            var total = 0;
 
-            var columnsToLeft = IsMirroredVerticaly(pattern);
+            object lockObject = new object();
 
-            if (columnsToLeft == 0)
-                rowsAbove = IsMirroredHorizontally(pattern);
-
-            lock (lockObject)
+            Parallel.ForEach(patterns, pattern =>
             {
-                total += columnsToLeft + 100 * rowsAbove;
-            }
-        });
+                int rowsAbove = 0;
 
-        Console.WriteLine($"Part 1 result: {total}");
+                var columnsToLeft = IsMirroredVerticaly(pattern, i);
+
+                if (columnsToLeft == 0)
+                    rowsAbove = IsMirroredHorizontally(pattern, i);
+
+                lock (lockObject)
+                {
+                    total += columnsToLeft + 100 * rowsAbove;
+                }
+            });
+
+            Console.WriteLine($"Part {i + 1} result: {total}");
+        }
     }
 
-    public static int IsMirroredHorizontally(string pattern)
+    public static int IsMirroredHorizontally(string pattern, int allowedDifference = 0)
     {
         var lines = pattern.Split("\r\n");
 
@@ -44,11 +48,18 @@
 
         for (int i = 1; i < lines.Count(); i++)
         {
+            var differences = 0;
             isMirrored = true;
             var j = 0;
+
             while (isMirrored && (i - 1 - j) >= 0 && (i + j) < lines.Count())
             {
-                isMirrored = isMirrored && (lines[i - 1 - j] == lines[i + j]);
+                var topLine = lines[i - 1 - j];
+                var bottomLine = lines[i + j];
+
+                differences += topLine.Zip(bottomLine, (c1, c2) => c1 != c2 ? 1 : 0).Sum();
+
+                isMirrored = isMirrored && differences <= allowedDifference;
 
                 if (isMirrored)
                 {
@@ -56,7 +67,7 @@
                 }
             }
 
-            if (isMirrored)
+            if (isMirrored && differences == allowedDifference)
             {
                 //Console.WriteLine($"Is mirrored horizontally between rows {i} and {i+1} with {i} rows above");
                 rowsAbove = i;
@@ -72,7 +83,7 @@
         return rowsAbove;
     }
 
-    public static int IsMirroredVerticaly(string pattern)
+    public static int IsMirroredVerticaly(string pattern, int allowedDifference = 0)
     {
         var lines = pattern.Split("\r\n");
 
@@ -83,22 +94,27 @@
         {
             object lockObject = new object();
 
+            var range = Math.Min(i, lines[0].Length - i);
+            var differences = 0;
             isMirrored = true;
-
-            var range = Math.Min(i, lines[0].Length-i);
 
             Parallel.ForEach(lines, (line, parallelLoopState) =>
             {
                 lock (lockObject)
                 {
-                    isMirrored = isMirrored && (line.Substring(i - range, range) == new string(line.Substring(i, range).Reverse().ToArray()));
+                    var leftString = line.Substring(i - range, range);
+                    var reversedRightString = new string(line.Substring(i, range).Reverse().ToArray());
+
+                    differences += leftString.Zip(reversedRightString, (c1, c2) => c1 != c2 ? 1 : 0).Sum();
+
+                    isMirrored = isMirrored && differences <= allowedDifference;
                 }
 
                 if (!isMirrored)
                     parallelLoopState.Break();
             });
 
-            if (isMirrored)
+            if (isMirrored && differences == allowedDifference)
             {
                 //Console.WriteLine($"Is mirrored vertically between columns {i} and {i+1} with {i} columns on the left");
                 columnsToLeft = i;
